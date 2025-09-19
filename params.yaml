@@ -1,0 +1,10 @@
+blast_settings:
+  blast_path: '/usr/local/bin'
+  blastn_parameters: "-reward 2"
+
+blast_parse_settings:
+  shortest_hit_fraction: 80
+
+aligner_settings:
+  aligner_path: '/usr/local/bin/muscle3'
+  aligner_parameters: "-n 2"

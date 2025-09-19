@@ -1,4 +1,6 @@
 import sys
+
+import pandas as pd
 from Levenshtein import distance
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
@@ -85,7 +87,7 @@ def generateDistanceMatrix():
     '''
     generate matrix of Levenshtein distances between all pairs
     '''
-    
+    sequenceLines = dfSequences['sequences'].to_list()
     ldDistMatrix = np.zeros((len(sequenceLines),len(sequenceLines)))
 
     i=0
@@ -93,6 +95,8 @@ def generateDistanceMatrix():
     
     while i < len(sequenceLines):
         j=i+1
+        if i%100 == 0:
+            print (str(i))
         while j < len(sequenceLines):
             ldDistMatrix[i][j] = distance(sequenceLines[i], sequenceLines[j])
             j+=1
@@ -113,6 +117,7 @@ def readFastaFile(filename):
     print("load sequences from fasta file <" + fastaFile + ">")
     global headerLines
     global sequenceLines
+    global dfSequences
 
     # load the fasta lines into a list
     try:
@@ -142,10 +147,14 @@ def readFastaFile(filename):
         s += 1
 
     headerLines.append(headerLine)
-    sequenceLines.append(sequence)   
-         
-    print("loaded <" + str(len(headerLines)) + "> sequences")
-    
+    sequenceLines.append(sequence)
+    dfSequences = pd.DataFrame({'header': headerLines, "sequences": sequenceLines})
+    print("loaded <" + str(len(headerLines))  + "> sequences")
+
+    #dfSequences = dfSequences[dfSequences['header'].str.contains("let")]
+    #print("after filtering <" + str(len(dfSequences.index)) + "> sequences remain")
+
+
     return len(headerLines)
 
 
@@ -182,9 +191,22 @@ def testPlot(DistMatrix):
     
     nx.draw_networkx_edge_labels(G, pos, edge_labels = edge_weight)
 
-    plt.show()
+    #plt.show()
+    plt.savefig("/media/simonray/data24/data/uio_dropbox_sr/myTeaching/IKCU/networks/output.jpg")
     
     print("done")
+
+def makeHistogram(ldDistMat, fastafile):
+    from matplotlib import pyplot as plt
+    #plt.hist(d.ravel(), bins=np.arange(-0.5, 51), color='#0504aa', alpha=0.7, rwidth=0.85)
+    import seaborn as sns
+    dfDist = pd.DataFrame(ldDistMat.flatten())
+    dfDist.columns = ['dist']
+    histplot = sns.histplot(data=dfDist, x="dist", binwidth=1).set_title("Levenshtein pairwise distance human seed regions")
+    fig = histplot.get_figure()
+    from pathlib import Path
+    plotfilename = Path(Path(fastafile).parent, Path(fastafile).stem + ".png")
+    fig.savefig(str(Path(Path(fastafile).parent, Path(fastafile).stem + ".png")))
 
 
 def main(argv=None): 
@@ -200,9 +222,11 @@ def main(argv=None):
     
     # generate Levenshtein distance matrix
     ldDistMat = generateDistanceMatrix()
+    makeHistogram(ldDistMat, fastaFile)
+
     
     # make a pretty plot
-    testPlot(ldDistMat)
+    #testPlot(ldDistMat)
     
 if __name__ == '__main__':
 
